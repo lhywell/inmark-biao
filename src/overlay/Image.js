@@ -110,8 +110,8 @@ export default class BImage extends Init {
         this._option.group = group;
 
         let img = new Image();
-        img.setAttribute('crossorigin', 'anonymous');
         img.src = url;
+        img.setAttribute('crossorigin', 'anonymous');
         img.onload = () => {
             if (this._option.mode === 'auto') {
                 //auto模式图片自动适应屏幕大小
@@ -243,7 +243,7 @@ export default class BImage extends Init {
             // this._option.offsetY = 0
             image = new zrender.Image({
                 style: {
-                    image: url,
+                    image: img,
                     x: this._option.offsetX,
                     y: this._option.offsetY,
                     width: this._option.widthImg,
