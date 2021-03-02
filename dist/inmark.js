@@ -9054,11 +9054,18 @@ var BImage = function (_Init) {
     }, {
         key: 'zoomStage',
         value: function zoomStage(scaleBy) {
-            this.group.attr({
-                position: [0, 0],
-                scale: [scaleBy, scaleBy],
-                origin: this.getOrigin()
-            });
+            if (scaleBy === 1) {
+                this.group.attr({
+                    scale: [1.001, 1.001],
+                    origin: this.getOrigin()
+                });
+            } else {
+                this.group.attr({
+                    position: [0, 0],
+                    scale: [scaleBy, scaleBy],
+                    origin: this.getOrigin()
+                });
+            }
 
             var d = this.group.getLocalTransform();
 
@@ -18837,7 +18844,7 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var version = "0.0.1";
+var version = "0.0.2";
 console.log('inMark v' + version);
 var inMark = {
     version: version,
