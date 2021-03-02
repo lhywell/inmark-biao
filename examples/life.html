@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>生命周期</title>
+    <style type="text/css">
+    body,
+    html {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    #app {
+
+        width: 100%;
+        height: 100%;
+        background-color: #fff;
+        z-index: 99999;
+        padding: 5px 20px;
+    }
+
+    .tools {
+        width: 100%;
+        height: 30px;
+        background: #fff;
+        z-index: 2;
+        text-align: center;
+        border-bottom: 1px solid #EEEEEE;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .tools span {
+        display: inline-block;
+        width: 1px;
+        height: 30px;
+        border-left: 1px solid #eee;
+        margin-right: 20px;
+    }
+
+    .tools div {
+        margin-right: 10px;
+    }
+
+    .tools i {
+        float: left;
+        font-size: 17px;
+        color: #444444;
+        margin-right: 22px;
+        cursor: pointer;
+    }
+
+    .tools i:nth-child(1) {
+        margin-left: 20px;
+    }
+
+    .tools i:hover {
+        color: #044CA1;
+
+    }
+
+    .tools .active {
+        color: #044CA1;
+    }
+
+    .tools .icon-rotate {
+        font-size: 22px;
+    }
+
+    .tools .icon-up:before {
+        border: 1px solid #444444;
+        border-radius: 2px;
+    }
+
+    .tools .icon-down:before {
+        border: 1px solid #444444;
+        border-radius: 2px;
+    }
+
+    .tools .icon-up.active:before,
+    .tools .icon-down.active:before {
+        border: 1px solid #044CA1;
+    }
+
+    .tools .icon-up:hover:before,
+    .tools .icon-down:hover:before {
+        border: 1px solid #044CA1;
+    }
+
+    .imageAnnotate {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .list {
+        position: absolute;
+        right: 0;
+        top: 0;
+        overflow-y: scroll;
+    }
+
+    .list .item {
+        font-size: 13px;
+        cursor: pointer;
+        color: blue;
+    }
+
+    .icon-rotate-anti {
+        transform: scaleX(-1);
+    }
+
+    canvas:nth-child(1) {
+        background: #d2d2d2
+    }
+    </style>
+    <script src="./data/markjson.js"></script>
+    <script src="./data/markjson2.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="./lib/styles/icons.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="tools" ref="tools">
+            <div><i class="iconfont icon-drag" @click="openTools('drag')"></i></div>
+            <div> <i class="iconfont icon-act" @click="openTools('act')"></i>
+            </div>
+            <div><i class="iconfont icon-zoomin" @click="openTools('zoomin')"></i></div>
+            <div><i class="iconfont icon-delete" @click="openTools('delete')"></i></div>
+            <div @click="setData" style="cursor: pointer;">setData</div>
+            <div @click="getData" style="cursor: pointer;">getData</div>
+            <div @click="newData" style="cursor: pointer;" class="">新建实例</div>
+            <div @click="clear" style="cursor: pointer;">清屏</div>
+            <div @click="dispose" style="cursor: pointer;">注销</div>
+        </div>
+        <div class="imageAnnotate" :id="imgId" v-loading="loading"></div>
+    </div>
+</body>
+<!-- 引入Vue -->
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<!-- 引入Element UI -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../dist/inmark.js"></script>
+<script>
+let inMapVue = new Vue({
+    el: '#app',
+    data() {
+        return {
+            zr: null,
+            init: true,
+            imgId: '',
+            loading: false,
+            markNoteList: [],
+            image: null,
+            percentage: 0,
+            time: 0,
+            // ZImage:null
+        }
+    },
+    created() {},
+    mounted() {
+        this.initImage();
+    },
+    destroyed() {},
+    watch: {},
+    methods: {
+        classReset() {
+            let ary = this.$refs.tools.getElementsByClassName('iconfont');
+            Array.from(ary).forEach(item => {
+                if (item.className.indexOf('active') > -1) {
+                    item.className = item.className.replace('active', '').trim();
+                }
+            })
+        },
+        startRect() {
+            this.reset();
+            // console.log(this.rect)
+            if (this.rect) {
+                this.rect.open();
+            } else {
+                // this.initRect(this.markNoteList);
+                this.rect.open();
+            }
+        },
+        openTools(x, index) {
+            this.classReset();
+
+            if (x === 'drag') {
+                this.startDrag();
+            }
+            if (x === 'act') {
+                this.startRect();
+            }
+            if (x === 'rotate') {
+                this.startRotate();
+            }
+            if (x === 'zoomin') {
+                this.startZoomIn();
+                this.startDrag();
+            }
+            if (x === 'zoomout') {
+                this.startZoomOut();
+                this.startDrag();
+            }
+
+            if (x === 'delete') {
+                this.rect && this.rect.setDrag(false);
+                this.rect && this.rect.close();
+
+                if (this.rect) {
+                    let item = this.rect.removeAnnotation();
+                }
+            }
+            // let ary = this.$refs.tools.getElementsByClassName('iconfont');
+            // Array.from(ary)[index].className += ' active';
+        },
+        loadComplete() {
+            //获得ZImage实例
+            this.ZImage = this.image.getImage();
+
+            this.initRect(this.markNoteList);
+
+            this.loading = false;
+        },
+        initImage() {
+            let val = data.data;
+            const resPath = val.resPath;
+            const markInfo = val.markInfo;
+
+            this.markNoteList = JSON.parse(markInfo);
+            this.imgId = window.btoa(val.id + '2020');
+
+            this.loading = true;
+
+
+            this.$nextTick(() => {
+                let image = new inMark.Image({
+                    id: this.imgId,
+                    mode: 'original', //original or auto
+                    imgUrl: resPath,
+                    event: {
+                        onLoadComplete: this.loadComplete,
+                        onImageDrag: this.imageDrag,
+                        onImageDragEnd: this.onImageDragEnd_image,
+                    }
+                });
+
+                this.image = image;
+                this.zr = image.getZrender();
+                this.group = image.getGroup();
+
+                this.init = false;
+
+            });
+        },
+        initRect(data) {
+            // return;
+            let rect = new inMark.Rect({
+                data: data,
+                isOpen: false,
+                event: {
+                    onCreate: this.onCreate,
+                    onImageDrag: this.onImageDrag,
+                    onImageDragEnd: this.onImageDragEnd,
+                    onCreateComplete: this.onCreateComplete,
+                    onRectDrag: this.onRectDrag,
+                    onRectDragComplete: this.onRectDragComplete,
+                    onEditNodeDrag: this.onEditNodeDrag,
+                    onEditNodeDragComplete: this.onEditNodeDragComplete,
+                    onSelected: this.onSelected,
+                    unSelect: this.unSelect
+                }
+            });
+            // rect.setData(s);
+            this.rect = rect;
+            this.init = false;
+        },
+        startZoomIn() {
+            this.rect && this.rect.close();
+            this.rect.zoomIn();
+        },
+        setData() {
+            let data = data2.data;
+            const markInfo = data.markInfo;
+
+            this.markNoteList = JSON.parse(markInfo);
+
+            /** this.markNoteList
+            *[{
+                coordinates: Array(4),
+                id: "06216",
+                notes: "Nike Hong Kong Limited",
+                type: "Rectangle"
+            }]
+            **/
+            this.rect && this.rect.setData(this.markNoteList);
+        },
+        newData() {
+            this.initImage();
+        },
+        imageDrag(e) {
+            // console.log(e)
+        },
+        onImageDrag(e) {
+            // console.log(e)
+        },
+        onImageDragEnd(e) {
+            // console.log(e)
+        },
+        onImageDragEnd_image(e) {
+            console.log(e)
+        },
+        onCreate(e, obj) {
+            // console.log('create', e, obj)
+        },
+        onCreateComplete(e, obj) {},
+        onRectDrag(e, obj) {
+            // console.log('拖动',e,obj)
+        },
+        onRectDragComplete(e, obj) {},
+        onEditNodeDrag(e, obj) {
+            // console.log('编辑', e, obj)
+        },
+        onEditNodeDragComplete(e, obj) {
+            this.markNoteList.forEach(item => {
+                if (item.id === obj.id) {
+                    item.coordinates = obj.coordinates;
+                }
+            })
+        },
+        onSelected(e, data) {},
+        reset() {
+            // this.markNoteList.splice(0);
+            this.rect && this.rect.setDrag(false);
+            this.rect && this.rect.close();
+        },
+        startDrag() {
+            this.reset();
+            if (this.image) {
+                this.rect.setDrag(true);
+            }
+        },
+        clear() {
+            // 清除所有对象和画布。
+            this.image && this.image.clear();
+        },
+        dispose() {
+            // 移除自身。当不再需要使用该实例时，调用该方法以释放内存。
+            this.image && this.image.dispose();
+        },
+        getData() {
+            let result = this.rect.getData();
+            console.log(result)
+        }
+    },
+})
+</script>
+
+</html>
