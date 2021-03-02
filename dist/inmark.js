@@ -8608,8 +8608,8 @@ var BImage = function (_Init) {
             this._option.group = group;
 
             var img = new Image();
-            img.setAttribute('crossorigin', 'anonymous');
             img.src = url;
+            img.setAttribute('crossorigin', 'anonymous');
             img.onload = function () {
                 if (_this2._option.mode === 'auto') {
                     var xRate = _this2.ctx.canvasWidth / img.width;
@@ -8731,7 +8731,7 @@ var BImage = function (_Init) {
 
                 image = new _zrender2.default.Image({
                     style: {
-                        image: url,
+                        image: img,
                         x: _this2._option.offsetX,
                         y: _this2._option.offsetY,
                         width: _this2._option.widthImg,
@@ -18844,7 +18844,7 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var version = "0.0.2";
+var version = "0.0.3";
 console.log('inMark v' + version);
 var inMark = {
     version: version,
